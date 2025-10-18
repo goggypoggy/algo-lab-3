@@ -118,6 +118,45 @@ build b.exe: CXX_EXECUTABLE_LINKER__b_Debug CMakeFiles/b.dir/b.cpp.obj
   TARGET_IMPLIB = b.lib
   TARGET_PDB = b.pdb
 
+# =============================================================================
+# Object build statements for EXECUTABLE target c
+
+
+#############################################
+# Order-only phony target for c
+
+build cmake_object_order_depends_target_c: phony || .
+
+build CMakeFiles/c.dir/c.cpp.obj: CXX_COMPILER__c_unscanned_Debug D$:/Uni/algo/algo-lab-3/c.cpp || cmake_object_order_depends_target_c
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\c.dir\c.cpp.obj.d
+  FLAGS = -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd
+  OBJECT_DIR = CMakeFiles\c.dir
+  OBJECT_FILE_DIR = CMakeFiles\c.dir
+  TARGET_COMPILE_PDB = CMakeFiles\c.dir\
+  TARGET_PDB = c.pdb
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target c
+
+
+#############################################
+# Link the executable c.exe
+
+build c.exe: CXX_EXECUTABLE_LINKER__c_Debug CMakeFiles/c.dir/c.cpp.obj
+  CONFIG = Debug
+  FLAGS = -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd
+  LINK_FLAGS = -Xlinker /subsystem:console -fuse-ld=lld-link
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -loldnames
+  OBJECT_DIR = CMakeFiles\c.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_COMPILE_PDB = CMakeFiles\c.dir\
+  TARGET_FILE = c.exe
+  TARGET_IMPLIB = c.lib
+  TARGET_PDB = c.pdb
+
 
 #############################################
 # Utility command for edit_cache
@@ -149,6 +188,8 @@ build a: phony a.exe
 
 build b: phony b.exe
 
+build c: phony c.exe
+
 # =============================================================================
 # Folder targets.
 
@@ -157,7 +198,7 @@ build b: phony b.exe
 #############################################
 # Folder: D:/Uni/algo/algo-lab-3/build
 
-build all: phony a.exe b.exe
+build all: phony a.exe b.exe c.exe
 
 # =============================================================================
 # Built-in targets
