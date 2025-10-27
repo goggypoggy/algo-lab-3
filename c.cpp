@@ -2,7 +2,9 @@
 #include <cstring>
 #include <iostream>
 
-const int kMaxHeap = 100'000;
+#define _debug_mode_
+
+const int kMaxHeap = 100'005;
 
 struct member {
     int val = 0;
@@ -101,8 +103,7 @@ int SiftUp(member** heap, int i, bool compare(member*,member*)) {
 void HeapInsert(member** heap, member* x, bool compare(member*,member*)) {
     heap[size] = x;
     size++;
-    int sifted_up_x = SiftUp(heap, size - 1, compare);
-    SiftDown(heap, sifted_up_x, compare);
+    SiftUp(heap, size - 1, compare);
     size--;
 }
 
@@ -110,10 +111,7 @@ member* Remove(member** heap, int i, bool compare(member*,member*)) {
     assert(i >= 0 && i < size);
     member* removed = heap[i];
     removed->on = false;
-    Swap(heap[i], heap[size - 1]);
-    //size--;
-    int sifted_up_i = SiftUp(heap, i, compare);
-    SiftDown(heap, sifted_up_i, compare);
+    SiftDown(heap, i, compare);
     return removed;
 }
 
@@ -138,36 +136,49 @@ int InterfaceGetMax() {
 }
 
 int main(int argc, char** argv) {
-    
+    #ifndef _debug_mode_
     int q;
     std::cin >> q;
 
-    for (int i = 0; i < q; ++i) {
-    //while (true) {
+    for (int k = 0; k < q; ++k) {
+    #endif
+    #ifdef _debug_mode_
+    while (true) {
+    #endif
         char cmd[7] = {0};
         for (int c = 0; c < 6; ++c) {
             std::cin >> cmd[c];
         }
 
-        /*
+        #ifdef _debug_mode_
         if (strcmp(cmd, "Finish") == 0) {
             break;
         }
-        */
+        #endif
         if (strcmp(cmd, "Insert") == 0) {
             std::cin >> cmd[0]; // skip (
-            int i;
-            std::cin >> i;
+            int x;
+            std::cin >> x;
             std::cin >> cmd[0]; // skip )
             
-            InterfaceInsert(i);
+            InterfaceInsert(x);
         } else if (strcmp(cmd, "GetMin") == 0) {
+            #ifndef _debug_mode_
+            std::cout << InterfaceGetMin() << (k == q - 1 ? "" : "\n");
+            #endif
+            #ifdef _debug_mode_
             std::cout << InterfaceGetMin() << std::endl;
+            #endif
         } else if (strcmp(cmd, "GetMax") == 0) {
+            #ifndef _debug_mode_
+            std::cout << InterfaceGetMax() << (k == q - 1 ? "" : "\n");
+            #endif
+            #ifdef _debug_mode_
             std::cout << InterfaceGetMax() << std::endl;
+            #endif
         }
 
-        /*
+        #ifdef _debug_mode_
         std::cout << "Min heap:" << std::endl;
         OutputHeap(min_heap);
         std::cout << std::endl << std::endl;
@@ -175,7 +186,7 @@ int main(int argc, char** argv) {
         std::cout << "Max heap:" << std::endl;
         OutputHeap(max_heap);
         std::cout << std::endl << std::endl;
-        */
+        #endif
     }
 
     delete[] min_heap;
@@ -192,4 +203,12 @@ Insert(3)
 Insert(2)
 Insert(1)
 Insert(0)
+
+Insert(4)
+Insert(0)
+Insert(5)
+Insert(3)
+Insert(1)
+Insert(6)
+Insert(2)
 */
