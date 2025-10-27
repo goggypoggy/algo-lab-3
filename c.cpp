@@ -19,6 +19,8 @@ int size = 0;
 void OutputElement(member* x) {
     std::cout << (x->on ? '[' : '(')
                   << x->val
+                  << "::"
+                  << reinterpret_cast<int>(x)
                   << (x->on ? ']' : ')');
 }
 
@@ -62,28 +64,48 @@ bool MaxCmp(member* lhs, member* rhs) {
 }
 
 void SiftDown(member** heap, int i, bool compare(member*,member*)) {
-    if (i >= size) {
-        return;
+    while (i < size) {
+        int left = 2 * i + 1;
+        int right = 2 * i + 2;
+
+        if (left >= size) {
+            return;
+        }
+
+        int j = left;
+
+        if (right < size && compare(heap[right], heap[left])) {
+            j = right;
+        }
+
+        if (compare(heap[j], heap[i])) {
+            Swap(heap[i], heap[j]);
+        }
+
+        i = j;
     }
+    // if (i >= size) {
+    //     return;
+    // }
 
-    int left = 2 * i + 1;
-    int right = 2 * i + 2;
+    // int left = 2 * i + 1;
+    // int right = 2 * i + 2;
 
-    if (left >= size) {
-        return;
-    }
+    // if (left >= size) {
+    //     return;
+    // }
 
-    int j = left;
+    // int j = left;
 
-    if (right < size && compare(heap[right], heap[left])) {
-        j = right;
-    }
+    // if (right < size && compare(heap[right], heap[left])) {
+    //     j = right;
+    // }
 
-    if (compare(heap[j], heap[i])) {
-        Swap(heap[i], heap[j]);
-    }
+    // if (compare(heap[j], heap[i])) {
+    //     Swap(heap[i], heap[j]);
+    // }
 
-    SiftDown(heap, j, compare);
+    // SiftDown(heap, j, compare);
 }
 
 int SiftUp(member** heap, int i, bool compare(member*,member*)) {
@@ -128,10 +150,16 @@ void InterfaceInsert(int x) {
 }
 
 int InterfaceGetMin() {
+    if (!min_heap[0]->on) {
+        SiftDown(min_heap, 0, MinCmp);
+    }
     return GetTop(min_heap, MinCmp)->val;
 }
 
 int InterfaceGetMax() {
+    if (!max_heap[0]->on) {
+        SiftDown(max_heap, 0, MaxCmp);
+    }
     return GetTop(max_heap, MaxCmp)->val;
 }
 
