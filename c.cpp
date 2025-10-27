@@ -42,14 +42,9 @@ void SiftDown(int* heap, int size,  int element) {
 }
 
 int SiftUp(int* heap, int size, int element) {
-    if (element == 0) {
-        return 0;
-    }
-
-    int parent = (element - 1) / 2;
-    if (heap[parent] < heap[element]) {
-        Swap(heap[parent], heap[element]);
-        return SiftUp(heap, size, parent);
+    while (element > 0 && heap[element] > heap[(element - 1) / 2]) {
+        Swap(heap[element], heap[(element - 1) / 2]);
+        element = (element - 1) / 2;
     }
 
     return element;
@@ -62,21 +57,11 @@ void Insert(int* heap, int &size, int x) {
     SiftDown(heap, size, sifted_up_x);
 }
 
-int Remove(int* heap, int& size, int i) {
-    assert(i >= 0 && i < size);
-    int removed = heap[i];
-    Swap(heap[i], heap[size - 1]);
-    size--;
-    int sifted_up_i = SiftUp(heap, size, i);
-    SiftDown(heap, size, sifted_up_i);
-    return removed;
-}
-
 int GetMin(int* heap, int& size) {
-    if (size == 1) {
-        return Remove(heap, size, 0);
-    }
     int min = (size - 2) / 2 + 1;
+    if (size == 1) {
+        min = 0;
+    }
 
     for (int i = min + 1; i < size; ++i) {
         if (heap[i] < heap[min]) {
@@ -84,11 +69,19 @@ int GetMin(int* heap, int& size) {
         }
     }
 
-    return Remove(heap, size, min);
+    int removed = heap[min];
+    Swap(heap[min], heap[size - 1]);
+    size--;
+    SiftUp(heap, size, min);
+    return removed;
 }
 
 int GetMax(int* heap, int& size) {
-    return Remove(heap, size, 0);
+    int removed = heap[0];
+    Swap(heap[0], heap[size - 1]);
+    size--;
+    SiftDown(heap, size, 0);
+    return removed;
 }
 
 int main(int argc, char** argv) {
