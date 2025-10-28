@@ -12,10 +12,12 @@ struct core {
 };
 
 core* core_arr;
-    
+
+// Cost heap - heap of available cores    
 core** cost_heap;
 int cost_heap_size;
 
+// Finish heap - heap of busy cores
 core** finish_heap;
 int finish_heap_size;
 
@@ -48,15 +50,6 @@ bool CostCmp(core*& lhs, core*& rhs) {
 
 // lhs > rhs finish_time-wise
 bool FinishCmp(core*& lhs, core*& rhs) {
-    // -1 <=> infinity
-    // if a core is already available,
-    // it's finish_time is infinity
-    if (lhs->finish_time == -1) {
-        return true;
-    }
-    if (rhs->finish_time == -1) {
-        return false;
-    }
     return lhs->finish_time > rhs->finish_time;
 }
 
@@ -106,6 +99,12 @@ void Insert(core** heap, core* new_core, int& size, bool cmp(core*&,core*&)) {
     SiftUp(heap, size, size - 1, cmp);
 }
 
+void RemoveTop(core** heap, int& size, bool cmp(core*&,core*&)) {
+    std::swap(heap[0], heap[size - 1]);
+    size--;
+    SiftDown(heap, size, 0, cmp);
+}
+
 void AssignTask(task& new_task) {
     if (cost_heap[0]->finish_time > new_task.start) {
         //std::cout << "No cores available!\n";
@@ -115,30 +114,31 @@ void AssignTask(task& new_task) {
     // The top element of the cost heap
     // is the core with the smallest cost
     // Assign that core a new finish time
-    // Remove top of cost heap
     //std::cout << "Core " << cost_heap[0]->cost << " in use\n";
     cost_heap[0]->finish_time = new_task.start + new_task.length;
     cost_heap[0]->cur_task = new_task;
-    std::swap(cost_heap[0], cost_heap[cost_heap_size - 1]);
-    cost_heap_size--;
-    SiftDown(cost_heap, cost_heap_size, 0, CostCmp);
-
-    // Since we updated a core's finish time
-    // we have to assure the finish heap stays a heap
-    BuildHeap(finish_heap, finish_heap_size, FinishCmp);
+    
+    // Add the core to the finish time heap
+    Insert(finish_heap, cost_heap[0], finish_heap_size, FinishCmp);
+    
+    // Remove top of cost heap
+    RemoveTop(cost_heap, cost_heap_size, CostCmp);
 }
 
 void RefreshCores(int cur_time) {
     // refresh until all cores are free
     // or can't refresh anymore
-    while (true) {
+    while (finish_heap_size > 0) {
         if (finish_heap[0]->finish_time != -1 && 
             cur_time >= finish_heap[0]->finish_time) {
+            // Return the freed core to the cost heap
             Insert(cost_heap, finish_heap[0], cost_heap_size, CostCmp);
+            // Calculate the cost of the finished task
             finish_heap[0]->finish_time = -1;
             total_cost += finish_heap[0]->cost * finish_heap[0]->cur_task.length;
             finish_heap[0]->cur_task = {0, 0};
-            SiftDown(finish_heap, finish_heap_size, 0, FinishCmp);
+            // Remove the freed core from the finish heap
+            RemoveTop(finish_heap, finish_heap_size, FinishCmp);
         } else {
             break;
         }
@@ -157,12 +157,11 @@ int main(int argc, char** argv) {
     cost_heap_size = n;
     
     finish_heap = new core*[n];
-    finish_heap_size = n;
+    finish_heap_size = 0;
 
     for (int i = 0; i < n; ++i) {
         std::cin >> core_arr[i].cost;
         cost_heap[i] = &core_arr[i];
-        finish_heap[i] = &core_arr[i];
     }
 
     BuildHeap(cost_heap, cost_heap_size, CostCmp);
