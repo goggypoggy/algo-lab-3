@@ -2,241 +2,117 @@
 #include <cstring>
 #include <iostream>
 
-#define _debug_mode_
+const int kMaxHeap = 100'000;
 
-const int kMaxHeap = 100'005;
-
-struct member {
-    int val = 0;
-    bool on = true;
-};
-
-member** max_heap = new member*[kMaxHeap];
-member** min_heap = new member*[kMaxHeap];
-member* arr = new member[kMaxHeap];
-int size = 0;
-
-void OutputElement(member* x) {
-    std::cout << (x->on ? '[' : '(')
-                  << x->val
-                  << "::"
-                  << reinterpret_cast<int>(x)
-                  << (x->on ? ']' : ')');
-}
-
-void OutputHeap(member** heap) {
-    int i = 0;
-    int count = 1;
-    while (i < size) {
-        for (int j = 0; j < count && i + j < size; ++j) {
-            OutputElement(heap[i + j]);
-            std::cout << (j == count - 1 ? "\n" : " ");
-        }
-        i += count;
-        count *= 2;
+void Output(int* mas, int size) {
+    for (int i = 0; i < size; ++i) {
+        std::cout << mas[i] << (i == size - 1 ? "\n" : " ");
     }
 }
 
-void Swap(member*& a, member*& b) {
-    member* temp = a;
+void Swap(int& a, int& b) {
+    int temp = a;
     a = b;
     b = temp;
 }
 
-bool MinCmp(member* lhs, member* rhs) {
-    if (!lhs->on) {
-        return false;
-    } else if (!rhs->on) {
-        return true;
+void SiftDown(int* heap, int size,  int element) {
+    if (element >= size) {
+        return;
     }
 
-    return lhs->val < rhs->val;
+    int left = 2 * element + 1;
+    int right = 2 * element + 2;
+
+    if (left >= size) {
+        return;
+    }
+
+    int j = left;
+
+    if (right < size && heap[right] > heap[left]) {
+        j = right;
+    }
+
+    if (heap[element] < heap[j]) {
+        Swap(heap[element], heap[j]);
+    }
+
+    SiftDown(heap, size, j);
 }
 
-bool MaxCmp(member* lhs, member* rhs) {
-    if (!lhs->on) {
-        return false;
-    } else if (!rhs->on) {
-        return true;
+int SiftUp(int* heap, int size, int element) {
+    while (element > 0 && heap[element] > heap[(element - 1) / 2]) {
+        Swap(heap[element], heap[(element - 1) / 2]);
+        element = (element - 1) / 2;
     }
 
-    return lhs->val > rhs->val;
+    return element;
 }
 
-void SiftDown(member** heap, int i, bool compare(member*,member*)) {
-    while (i < size) {
-        int left = 2 * i + 1;
-        int right = 2 * i + 2;
-
-        if (left >= size) {
-            return;
-        }
-
-        int j = left;
-
-        if (right < size && compare(heap[right], heap[left])) {
-            j = right;
-        }
-
-        if (compare(heap[j], heap[i])) {
-            Swap(heap[i], heap[j]);
-        }
-
-        i = j;
-    }
-    // if (i >= size) {
-    //     return;
-    // }
-
-    // int left = 2 * i + 1;
-    // int right = 2 * i + 2;
-
-    // if (left >= size) {
-    //     return;
-    // }
-
-    // int j = left;
-
-    // if (right < size && compare(heap[right], heap[left])) {
-    //     j = right;
-    // }
-
-    // if (compare(heap[j], heap[i])) {
-    //     Swap(heap[i], heap[j]);
-    // }
-
-    // SiftDown(heap, j, compare);
-}
-
-int SiftUp(member** heap, int i, bool compare(member*,member*)) {
-    if (i == 0) {
-        return 0;
-    }
-
-    int parent = (i - 1) / 2;
-    if (compare(heap[i], heap[parent])) {
-        Swap(heap[parent], heap[i]);
-        return SiftUp(heap, parent, compare);
-    }
-
-    return i;
-}
-
-void HeapInsert(member** heap, member* x, bool compare(member*,member*)) {
+void Insert(int* heap, int &size, int x) {
     heap[size] = x;
     size++;
-    SiftUp(heap, size - 1, compare);
-    size--;
+    int sifted_up_x = SiftUp(heap, size, size - 1);
+    SiftDown(heap, size, sifted_up_x);
 }
 
-member* Remove(member** heap, int i, bool compare(member*,member*)) {
-    assert(i >= 0 && i < size);
-    member* removed = heap[i];
-    removed->on = false;
-    SiftDown(heap, i, compare);
+int GetMin(int* heap, int& size) {
+    int min = (size - 2) / 2 + 1;
+    if (size == 1) {
+        min = 0;
+    }
+
+    for (int i = min + 1; i < size; ++i) {
+        if (heap[i] < heap[min]) {
+            min = i;
+        }
+    }
+
+    int removed = heap[min];
+    Swap(heap[min], heap[size - 1]);
+    size--;
+    SiftUp(heap, size, min);
     return removed;
 }
 
-member* GetTop(member** heap, bool compare(member*,member*)) {
-    return Remove(heap, 0, compare);
-}
-
-void InterfaceInsert(int x) {
-    arr[size] = {x, true};
-    HeapInsert(min_heap, &arr[size], MinCmp);
-    HeapInsert(max_heap, &arr[size], MaxCmp);
-    
-    size++;
-}
-
-int InterfaceGetMin() {
-    if (!min_heap[0]->on) {
-        SiftDown(min_heap, 0, MinCmp);
-    }
-    return GetTop(min_heap, MinCmp)->val;
-}
-
-int InterfaceGetMax() {
-    if (!max_heap[0]->on) {
-        SiftDown(max_heap, 0, MaxCmp);
-    }
-    return GetTop(max_heap, MaxCmp)->val;
+int GetMax(int* heap, int& size) {
+    int removed = heap[0];
+    Swap(heap[0], heap[size - 1]);
+    size--;
+    SiftDown(heap, size, 0);
+    return removed;
 }
 
 int main(int argc, char** argv) {
-    #ifndef _debug_mode_
     int q;
+    int* heap = new int[kMaxHeap];
+    int size = 0;
+    
     std::cin >> q;
 
     for (int k = 0; k < q; ++k) {
-    #endif
-    #ifdef _debug_mode_
-    while (true) {
-    #endif
         char cmd[7] = {0};
         for (int c = 0; c < 6; ++c) {
             std::cin >> cmd[c];
         }
 
-        #ifdef _debug_mode_
-        if (strcmp(cmd, "Finish") == 0) {
-            break;
-        }
-        #endif
         if (strcmp(cmd, "Insert") == 0) {
             std::cin >> cmd[0]; // skip (
-            int x;
-            std::cin >> x;
+            int i;
+            std::cin >> i;
             std::cin >> cmd[0]; // skip )
-            
-            InterfaceInsert(x);
+
+            Insert(heap, size, i);
         } else if (strcmp(cmd, "GetMin") == 0) {
-            #ifndef _debug_mode_
-            std::cout << InterfaceGetMin() << (k == q - 1 ? "" : "\n");
-            #endif
-            #ifdef _debug_mode_
-            std::cout << InterfaceGetMin() << std::endl;
-            #endif
+            std::cout << GetMin(heap, size) << std::endl;
         } else if (strcmp(cmd, "GetMax") == 0) {
-            #ifndef _debug_mode_
-            std::cout << InterfaceGetMax() << (k == q - 1 ? "" : "\n");
-            #endif
-            #ifdef _debug_mode_
-            std::cout << InterfaceGetMax() << std::endl;
-            #endif
+            std::cout << GetMax(heap, size) << std::endl;
         }
 
-        #ifdef _debug_mode_
-        std::cout << "Min heap:" << std::endl;
-        OutputHeap(min_heap);
-        std::cout << std::endl << std::endl;
-        
-        std::cout << "Max heap:" << std::endl;
-        OutputHeap(max_heap);
-        std::cout << std::endl << std::endl;
-        #endif
+        //Output(heap, size);
     }
 
-    delete[] min_heap;
-    delete[] max_heap;
-    delete[] arr;
+    delete[] heap;
     return 0;
 }
-
-/*
-Insert(6)
-Insert(5)
-Insert(4)
-Insert(3)
-Insert(2)
-Insert(1)
-Insert(0)
-
-Insert(4)
-Insert(0)
-Insert(5)
-Insert(3)
-Insert(1)
-Insert(6)
-Insert(2)
-*/
