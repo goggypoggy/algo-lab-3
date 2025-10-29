@@ -152,10 +152,10 @@ int main(int argc, char** argv) {
 
         UpdateHeap(time);
 
-        /*
+        /**/
         std::cout << "before:\n";
-        OutputHeap(memblk_heap, memblk_heap_size);
-        //OutputMas(memblk_arr, 30'000);
+        //OutputHeap(memblk_heap, memblk_heap_size);
+        OutputMas(memblk_arr, 30'000);
         std::cout << "------\n";
         /**/
 
@@ -167,10 +167,10 @@ int main(int argc, char** argv) {
             std::cout << (AccessBlock(time, x) ? '+' : '-') << std::endl;
         }
 
-        /*
+        /**/
         std::cout << "after:\n";
-        OutputHeap(memblk_heap, memblk_heap_size);
-        //OutputMas(memblk_arr, 30'000);
+        //OutputHeap(memblk_heap, memblk_heap_size);
+        OutputMas(memblk_arr, 30'000);
         std::cout << "------\n";
         /**/
     }
