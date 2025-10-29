@@ -6,15 +6,29 @@ struct memblk {
     int id;
 };
 
+const int kMaxBlk = 30'000;
+
 memblk* memblk_arr;
 
 // Heap of active memory blocks
-memblk** memblk_heap;
-int memblk_heap_size = 0;
+memblk** busy_heap;
+int busy_heap_size = 0;
 
-int next_blk = 0;
+// Heap of free memory blocks
+memblk** free_heap;
+int free_heap_size = kMaxBlk;
 
 int L = 600;
+
+// lhs < rhs date-wise
+bool DateCmp(memblk*& lhs, memblk*& rhs) {
+    return lhs->due_date < rhs->due_date;
+}
+
+// lhs < rhs id-wise
+bool IdCmp(memblk*& lhs, memblk*& rhs) {
+    return lhs->id < rhs->id;
+}
 
 void OutputElement(memblk* x) {
     std::cout << x->id + 1
@@ -45,7 +59,7 @@ void OutputHeap(memblk** heap, int size) {
     }
 }
 
-int SiftDown(memblk** heap, int size, int i) {
+int SiftDown(memblk** heap, int size, int i, bool cmp(memblk*&,memblk*&)) {
     while (i < size) {
         int left = 2 * i + 1;
         int right = 2 * i + 2;
@@ -56,11 +70,11 @@ int SiftDown(memblk** heap, int size, int i) {
 
         int j = left;
 
-        if (right < size && heap[right]->due_date < heap[left]->due_date) {
+        if (right < size && cmp(heap[right], heap[left])) {
             j = right;
         }
 
-        if (heap[j]->due_date < heap[i]->due_date) {
+        if (cmp(heap[j], heap[i])) {
             std::swap(heap[i], heap[j]);
         }
 
@@ -69,8 +83,8 @@ int SiftDown(memblk** heap, int size, int i) {
     return i;
 }
 
-int SiftUp(memblk** heap, int size, int i) {
-    while (i > 0 && heap[(i - 1) / 2]->due_date >= heap[i]->due_date) {
+int SiftUp(memblk** heap, int size, int i, bool cmp(memblk*&,memblk*&)) {
+    while (i > 0 && !cmp(heap[(i - 1) / 2], heap[i])) {
         std::swap(heap[(i - 1) / 2], heap[i]);
         i = (i - 1) / 2;
     }
@@ -78,41 +92,45 @@ int SiftUp(memblk** heap, int size, int i) {
     return i;
 }
 
-void BuildHeap(memblk** heap, int size) {
+void BuildHeap(memblk** heap, int size, bool cmp(memblk*&,memblk*&)) {
     int start = size / 2;
     for (int i = start; i >= 0; i--) {
-        SiftDown(heap, size, i);
+        SiftDown(heap, size, i, cmp);
     }
 }
 
-void Insert(memblk** heap, memblk* new_memblk, int& size) {
+void Insert(memblk** heap, memblk* new_memblk, int& size, bool cmp(memblk*&,memblk*&)) {
     heap[size] = new_memblk;
     size++;
-    SiftUp(heap, size, size - 1);
+    SiftUp(heap, size, size - 1, cmp);
 }
 
-void RemoveTop(memblk** heap, int& size) {
+void RemoveTop(memblk** heap, int& size, bool cmp(memblk*&,memblk*&)) {
     std::swap(heap[0], heap[size - 1]);
     size--;
-    SiftDown(heap, size, 0);
+    SiftDown(heap, size, 0, cmp);
 }
 
 void UpdateHeap(int cur_time) {
-    while (memblk_heap_size > 0 &&
-        memblk_heap[0]->due_date <= cur_time) {
-        memblk_heap[0]->active = false;
-        memblk_heap[0]->due_date = -1;
-        if (memblk_heap[0]->id < next_blk) {
-            next_blk = memblk_heap[0]->id;
-        }
-        RemoveTop(memblk_heap, memblk_heap_size);
+    while (busy_heap_size > 0 &&
+        busy_heap[0]->due_date <= cur_time) {
+        busy_heap[0]->active = false;
+        busy_heap[0]->due_date = -1;
+        Insert(free_heap, busy_heap[0], free_heap_size, IdCmp);
+        RemoveTop(busy_heap, busy_heap_size, DateCmp);
     }
 }
 
 bool AccessBlock(int cur_time, int id) {
     if (memblk_arr[id - 1].active) {
         memblk_arr[id - 1].due_date = cur_time + L;
-        BuildHeap(memblk_heap, memblk_heap_size);    
+        //BuildHeap(busy_heap, busy_heap_size, DateCmp);
+        for (int i = 0; i < busy_heap_size; ++i) {
+            if (busy_heap[i]->id == id - 1) {
+                SiftDown(busy_heap, busy_heap_size, i, DateCmp);
+                break;
+            }
+        }    
         return true;
     }
 
@@ -120,42 +138,38 @@ bool AccessBlock(int cur_time, int id) {
 }
 
 int GetBlock(int cur_time) {
-    memblk_arr[next_blk].due_date = cur_time + L;
-    memblk_arr[next_blk].active = true;
-    memblk* new_blk = &memblk_arr[next_blk];
-    int added = next_blk;
+    free_heap[0]->due_date = cur_time + L;
+    free_heap[0]->active = true;
     
-    Insert(memblk_heap, new_blk, memblk_heap_size);
+    int added = free_heap[0]->id;
     
-    while (memblk_arr[next_blk].active) {
-        next_blk++;
-    }
+    Insert(busy_heap, free_heap[0], busy_heap_size, DateCmp);
+    RemoveTop(free_heap, free_heap_size, IdCmp);
 
     return added + 1;
 }
 
 int main(int argc, char** argv) {
-    memblk_arr = new memblk[30'000];
-    memblk_heap = new memblk*[30'000];
+    memblk_arr = new memblk[kMaxBlk];
+    busy_heap = new memblk*[kMaxBlk];
+    free_heap = new memblk*[kMaxBlk];
 
-    for (int i = 0; i < 30'000; ++i) {
+    for (int i = 0; i < kMaxBlk; ++i) {
         memblk_arr[i].id = i;
+        free_heap[i] = &memblk_arr[i];
     }
+
+    BuildHeap(free_heap, free_heap_size, IdCmp);
 
     int time;
     char cmd;
     while (std::cin >> time >> cmd) {
-        // escape sequence for debugging
-        if (time <= 0) {
-            break;
-        }
-
         UpdateHeap(time);
 
-        /**/
+        /*
         std::cout << "before:\n";
-        //OutputHeap(memblk_heap, memblk_heap_size);
-        OutputMas(memblk_arr, 30'000);
+        OutputHeap(busy_heap, busy_heap_size);
+        //OutputMas(memblk_arr, kMaxBlk);
         std::cout << "------\n";
         /**/
 
@@ -167,15 +181,16 @@ int main(int argc, char** argv) {
             std::cout << (AccessBlock(time, x) ? '+' : '-') << std::endl;
         }
 
-        /**/
+        /*
         std::cout << "after:\n";
-        //OutputHeap(memblk_heap, memblk_heap_size);
-        OutputMas(memblk_arr, 30'000);
+        OutputHeap(busy_heap, busy_heap_size);
+        //OutputMas(memblk_arr, kMaxBlk);
         std::cout << "------\n";
         /**/
     }
 
-    delete[] memblk_heap;
+    delete[] busy_heap;
+    delete[] free_heap;
     delete[] memblk_arr;
     return 0;
 }
